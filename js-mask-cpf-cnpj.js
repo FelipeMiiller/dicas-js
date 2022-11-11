@@ -23,3 +23,13 @@ function cnpj(v){
    
     return v
 }
+
+
+//Para CPF
+/^\d{3}\.\d{3}\.\d{3}\-\d{2}$/
+
+//Para CNPJ
+/^\d{2}\.\d{3}\.\d{3}\/\d{4}\-\d{2}$/
+
+//Para ambos ao mesmo tempo
+/(^\d{3}\.\d{3}\.\d{3}\-\d{2}$)|(^\d{2}\.\d{3}\.\d{3}\/\d{4}\-\d{2}$)/
