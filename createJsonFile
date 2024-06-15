@@ -1,0 +1,18 @@
+import fs from 'fs';
+import { cwd } from "process";
+import path from "path";
+const directoryPath = path.join(cwd(), 'data');
+const filepath = path.join(directoryPath, 'confApp.json');
+
+
+
+  function createJsonFile(data: any) {
+    const jsonContent = JSON.stringify(data, null, 2);
+    fs.writeFile(filepath, jsonContent, 'utf8', (err) => {
+      if (err) {
+        console.error('Ocorreu um erro ao gravar o arquivo JSON:', err);
+        return;
+      }
+      console.log('O arquivo JSON foi criado e gravado com sucesso.');
+    });
+  }
