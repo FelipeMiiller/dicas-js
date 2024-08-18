@@ -1,29 +1,47 @@
-import dotenv from 'dotenv'; // Changed to single quotes
+import { HttpException, HttpStatus } from '@nestjs/common';
+import * as dotenv from 'dotenv'; // Changed to single quotes
+import * as fs from 'fs';
+import * as path from 'path';
+const ROOTPATH = path.resolve();
 
-function PROCESS(): { env: NodeJS.ProcessEnv; mode: string } {
-  // Load environment-specific configuration
-  if (process.env.NODE_ENV === 'admin') {
-    return {
-      env: { ...dotenv.config({ path: process.cwd() + '/.env.admin' }).parsed, ...process.env },
-      mode: 'Mode Admin',
-    };
-  } else if (process.env.MODE === 'api') {
-    return {
-      env: { ...dotenv.config({ path: process.cwd() + '/.env.api' }).parsed, ...process.env },
-      mode: 'Mode API',
-    };
-  } else if (dotenv.config({ path: process.cwd() + '/.env.develop' }).parsed) {
-    return {
-      env: { ...dotenv.config({ path: process.cwd() + '/.env.develop' }).parsed, ...process.env },
-      mode: 'Mode Develop',
-    };
-  }
-  return {
-    env: { ...dotenv.config().parsed },
-    mode: 'Mode Develop',
-  };
+function listEnvPaths() {
+  return fs
+    .readdirSync(ROOTPATH)
+    .filter((file) => file.startsWith('.env'))
+    .map((file) => path.join(ROOTPATH, file));
 }
 
-const VariableAmbient = PROCESS();
+export default function loadEnvironmentConfig(): { env: NodeJS.ProcessEnv; using: string } {
+  try {
+    const envPaths = listEnvPaths();
+    const NODE_ENV = process.env.NODE_ENV || 'development';
+    const envfilter = envPaths.filter((file) => file.endsWith(NODE_ENV));
+    const defaultEnvPath = envPaths.find((file) => file.endsWith('.env'));
 
-export default VariableAmbient
+    if (envfilter.length > 0) {
+      return {
+        env: { ...process.env, ...dotenv.config({ path: envfilter[0] }).parsed },
+        using: `.env.${envfilter[0].split('.env.')[1]}`,
+      };
+    }
+
+    if (defaultEnvPath) {
+      return {
+        env: { ...process.env, ...dotenv.config({ path: `${ROOTPATH}/.env` }).parsed },
+        using: '.env',
+      };
+    }
+    throw new Error('.env file not found');
+  } catch (error) {
+    throw new HttpException(
+      {
+        status: HttpStatus.FORBIDDEN,
+        error: 'Error in loadEnvironmentConfig',
+      },
+      HttpStatus.INTERNAL_SERVER_ERROR,
+      {
+        cause: error,
+      },
+    );
+  }
+}
